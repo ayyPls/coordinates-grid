@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js InstancedMesh with Texture Offset</title>
+    <style>
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+<script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.153.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.153.0/examples/jsm/",
+            "three/fonts/": "https://cdn.jsdelivr.net/npm/three@0.153.0/examples/fonts/"
+        }
+    }
+</script>
+
+<body>
+    <script type="module">
+        import * as THREE from 'three';
+        import { FontLoader } from "three/addons/loaders/FontLoader.js"
+        import { TextGeometry } from "three/addons/geometries/TextGeometry.js"
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+
+        // Create the Scene
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0d0d25);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 5);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Orbit Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+
+        // Terrain Model
+        const geometry = new THREE.BoxGeometry(5, 6, 10); // Sample terrain size
+        const terrainMaterial = new THREE.MeshStandardMaterial({ color: 0x663399, wireframe: true });
+
+        const mesh = new THREE.Mesh(geometry, terrainMaterial);
+        // mesh.position.set(10, 10, 10)
+        scene.add(mesh);
+
+        // Calculate the bounding box of the terrain
+        const boundingBox = new THREE.Box3().setFromObject(mesh);
+        const boundingBoxSize = boundingBox.getSize(new THREE.Vector3())
+        const boundingBoxCenter = boundingBox.getCenter(new THREE.Vector3())
+
+
+
+        // const 
+        // const gridSizeX = boundingBox.max.x - boundingBox.min.x; // Width of the model
+        // const gridSizeZ = boundingBox.max.z - boundingBox.min.z; // Depth of the model
+        // const division = 5; // Distance between grid lines
+
+        const COORDINATES_STEP = 1
+        const gridSize = Math.max(boundingBoxSize.x, boundingBoxSize.z)
+        const division = Math.abs(gridSize / COORDINATES_STEP)
+        console.log(division)
+
+
+
+        // function renderAxisGrid() {
+        //     const gridHelper = new THREE.GridHelper(gridSize, division, 0x990000, 0x990000);
+
+            
+        // }
+        // Add Grid
+
+        // const division = 10
+
+        const gridHelper = new THREE.GridHelper(gridSize, division, 0x990000, 0x990000);
+        // gridHelper.rotation.x = Math.PI / 2
+        const gridHelperBoundingBox = new THREE.Box3().setFromObject(gridHelper)
+        const gridHelperBoundingBoxSize = gridHelperBoundingBox.getSize(new THREE.Vector3())
+        // const gridHelperBoundingBoxCenter = gridHelperBoundingBox.getCenter(new THREE.Vector3())
+        console.log(gridHelperBoundingBox);
+
+        // x axis coordinate labels
+        gridHelper.position.set(boundingBoxCenter.x, boundingBoxCenter.y - boundingBoxSize.y / 2, boundingBoxCenter.z,)
+        for (let index = gridHelperBoundingBox.min.x; index <= gridHelperBoundingBox.max.x; index += COORDINATES_STEP) {
+            const coordinateLabel = createTextSprite("x = " + index, 25)
+            coordinateLabel.position.set(index, gridHelperBoundingBox.min.y, gridHelperBoundingBoxSize.z / 2)
+            gridHelper.add(coordinateLabel)
+        }
+        // z axis coordinate labels
+        for (let index = gridHelperBoundingBox.min.z; index <= gridHelperBoundingBox.max.z; index += COORDINATES_STEP) {
+            const coordinateLabel = createTextSprite("y = " + index, 25)
+            coordinateLabel.position.set(gridHelperBoundingBoxSize.x / 2, gridHelperBoundingBox.min.y, index)
+            gridHelper.add(coordinateLabel)
+        }
+        scene.add(gridHelper);
+        console.log(scene);
+
+
+        // Text Sprite Function
+        function createTextSprite(message, fontSize = 50, textColor = "white") {
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.width = 256;
+            canvas.height = 128;
+
+            context.font = `${fontSize}px Arial`;
+            context.fillStyle = textColor;
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.fillText(message, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(material);
+
+            sprite.rotateX(90)
+
+            sprite.scale.set(2, 1, 1); // Scale to match canvas proportions
+            return sprite;
+        }
+
+        // const l = createTextSprite("0;0", 20, "white")
+        // l.position.set(0, 0, 0)
+        // gridHelper.add(l)
+        // const w = createTextSprite("1;1", 20, "white")
+        // w.position.set(1, 0, 1)
+        // gridHelper.add(w)
+        // const axesHelper = new THREE.AxesHelper(1).setColors("red", "green", "blue") //x y z
+        // gridHelper.add(axesHelper)
+
+        // Add Lighting
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(10, 10, 10);
+        scene.add(directionalLight);
+
+        // Render Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+
+    </script>
+</body>
+
+</html>
